@@ -1,0 +1,3 @@
+1719392401000	2026-06-24 10:00:01	NordicDrive	Media	mediaVolume	12	INFO
+1719392402000	2026-06-24 10:00:02	NordicDrive	Connectivity	lteSignal	-79dBm	INFO
+1719392403000	2026-06-24 10:00:03	NordicDrive	Navigation	gpsDrift	4.6m	WARN
