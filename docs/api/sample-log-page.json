@@ -1,0 +1,24 @@
+{
+  "entries": [
+    {
+      "id": 42001,
+      "timestamp": "2026-07-21 09:15:00",
+      "brand": "NordicDrive",
+      "subsystem": "Connectivity",
+      "signal": "lteSignal",
+      "value": "-83dBm",
+      "level": "INFO",
+      "source": "REMOTE"
+    },
+    {
+      "id": 42002,
+      "timestamp": "2026-07-21 09:15:02",
+      "brand": "NordicDrive",
+      "subsystem": "Navigation",
+      "signal": "gpsDrift",
+      "value": "4.6m",
+      "level": "WARN",
+      "source": "REMOTE"
+    }
+  ]
+}

@@ -1,97 +1,112 @@
 # Infotainment Log Console
 
-A small Android app built with Kotlin and Jetpack Compose to simulate infotainment-style logging and data collection workflows across multiple vehicle brands.
+Infotainment Log Console is a native Android operations app for collecting, caching, reviewing, synchronizing, and exporting simulated subsystem logs. It is written in Kotlin with Jetpack Compose and is deliberately scoped as an inspectable mobile engineering project rather than an in-vehicle deployment.
 
-The app is intentionally narrow and portfolio-safe. It focuses on:
+Public repository: <https://github.com/Praharsh-Projects/infotainment-log-console>
 
-- background collection of mock signal events
-- local persistence of collected logs
-- log filtering and review
-- export and share of collected data
-- lightweight multi-brand configuration through theme and brand switching
+## What it demonstrates
 
-## What It Demonstrates
+- Kotlin Android development with Jetpack Compose and Material 3.
+- MVVM state management with `StateFlow`, `ViewModel`, and coroutines.
+- Compose Navigation across live logs, saved logs, and API/session configuration.
+- Bearer-authenticated REST integration with OkHttp and typed JSON parsing with kotlinx.serialization.
+- A bounded 500-entry JSON cache, legacy TSV migration, filtering, and Android share-sheet export.
+- Debug and release endpoint configuration through Gradle properties.
+- Unit, lint, build, and emulator regression checks in GitHub Actions.
+- A debug APK artifact for test distribution after successful CI checks.
 
-- Android app structure in Kotlin
-- Jetpack Compose UI for operational tooling
-- state-driven background collection controls
-- maintenance-friendly logging and export flows
-- file-based local persistence
-- unit-tested parsing and filtering logic
+## Mobile workflows
 
-## Core Features
+### Local collection
 
-- **Mock signal collection**  
-  Generates vehicle or infotainment-style signal entries such as speed, media volume, cabin temperature, and connectivity state.
+Select a brand and start collection. The ViewModel generates bounded mock signal events on a coroutine, persists them outside the UI thread, and restores them on the next launch.
 
-- **Background toggle**  
-  Start or stop collection without losing previously persisted entries.
+### Authenticated API sync
 
-- **Local persistence**  
-  Collected entries are stored in app-local storage and reloaded on the next launch.
+The Settings screen accepts a bearer session token and keeps it in process memory only. `GET /v1/logs?brand=...` requests use the build-configured API endpoint, add the authorization header, validate response size and fields, parse JSON, merge duplicate IDs, and cache the result. The repository contains the exact [API contract](docs/api/contract.md) and a [sample response](docs/api/sample-log-page.json).
 
-- **Log viewer and filters**  
-  Filter by severity, active brand, or free-text query.
+### Saved-log review
 
-- **Export and share**  
-  Export the current visible log set to a text file and share it through Android's standard share sheet.
+Saved logs can be filtered by brand, severity, text, or source. Exports use the same versioned JSON codec as local persistence and are shared through a scoped `FileProvider` URI.
 
-- **Brand switch**  
-  Toggle between two brand profiles to mimic multi-brand configuration behavior.
+## Architecture
 
-## Tech Stack
-
-- Kotlin
-- Android SDK
-- Jetpack Compose
-- Material 3
-- Coroutines
-- Gradle
-- JUnit
-
-## Run Locally
-
-### Prerequisites
-
-- Android SDK installed
-- JDK 17
-- An emulator or device
-
-### Build
-
-```bash
-./gradlew test
-./gradlew assembleDebug
+```text
+Compose screens and Navigation
+            |
+      StateFlow ViewModel
+            |
+       LogRepository
+       /           \
+JSON file cache   Authenticated REST client
+       |           |
+legacy migration  validated JSON response
 ```
 
-### Install to a connected device or emulator
+See [docs/architecture.md](docs/architecture.md) for responsibilities, state transitions, and failure handling.
+
+## Run locally
+
+Prerequisites:
+
+- Android Studio or Android SDK 35
+- JDK 17
+- an Android emulator or device with API 26 or later
+
+If the Android SDK is not already configured in the shell:
+
+```bash
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+```
+
+Run automated checks and build the debug APK:
+
+```bash
+./gradlew testDebugUnitTest lintDebug assembleDebug
+```
+
+Install on a connected emulator or device:
 
 ```bash
 ./gradlew installDebug
 ```
 
-## Project Layout
+Override the emulator API endpoint when needed:
 
-```text
-app/
-  src/main/
-  src/test/
-docs/
+```bash
+./gradlew -PdebugApiBaseUrl=http://10.0.2.2:8787/ installDebug
 ```
 
-## Files Worth Reviewing
+Local collection and cache/export flows work without a backend. REST sync requires a server that follows the documented contract.
 
-- [docs/architecture.md](docs/architecture.md)
-- [docs/samples/exported-log-sample.txt](docs/samples/exported-log-sample.txt)
-- [docs/screenshots/infotainment-log-console-home.png](docs/screenshots/infotainment-log-console-home.png)
+## Verification scope
 
-## Resume-Safe Positioning
+- 16 JVM unit tests cover filtering, typed JSON parsing, schema rejection, legacy migration, bounded caching, export, authenticated HTTP requests, response failures, brand isolation, token validation, and merge behavior.
+- 1 Compose instrumentation test checks navigation between Live, Settings, and Saved screens on an Android emulator.
+- Android Lint and `assembleDebug` run locally and in CI.
+- CI uploads test reports and the debug APK only after the quality job succeeds.
 
-- Built a Kotlin Android app with Jetpack Compose that simulates infotainment data logging, local persistence, log filtering, and export workflows across multiple vehicle brands.
-- Implemented background collection controls, maintenance-friendly file storage, and unit-tested parsing and filtering logic for a mobile diagnostic workflow.
+## Environment and release boundaries
+
+Debug defaults to `http://10.0.2.2:8787/` for an emulator-hosted API. Release uses a non-routable placeholder unless `releaseApiBaseUrl` is supplied. Signing keys, production credentials, Play Console access, and store submission are not stored or claimed. See [docs/release/release-pipeline.md](docs/release/release-pipeline.md).
+
+## Project layout
+
+```text
+app/src/main/java/.../
+  data/       JSON cache, REST client, and repository
+  domain/     log models, filters, and signal generator
+  ui/         ViewModel, Compose screens, navigation, and theme
+app/src/test/ JVM regression tests
+app/src/androidTest/ Compose emulator smoke test
+.github/workflows/ Android quality and test-distribution pipeline
+docs/         architecture, API contract, and release boundaries
+```
 
 ## Limitations
 
-- This is a simulated mobile logging tool, not an in-vehicle infotainment deployment.
-- Data collection is mocked and deterministic rather than sourced from hardware or a CAN bus.
-- Persistence uses a compact app-local file store to keep the implementation easy to inspect.
+- Signals are simulated and do not come from vehicle hardware or a CAN bus.
+- The documented REST API is an integration contract, not a production service bundled in this repository.
+- The session token is runtime-only; a production app would integrate an identity SDK and encrypted credential storage.
+- The CI artifact is a debug APK for testing, not a signed Play Store release.
+- Store publication and physical-device coverage remain external release activities.

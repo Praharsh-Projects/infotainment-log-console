@@ -1,45 +1,57 @@
 # Architecture
 
-## Intent
+## Design goal
 
-The app is structured as a small mobile operations console rather than a consumer UI. The goal is to make log collection, review, and export easy to inspect and easy to maintain.
+The app separates mobile presentation, state transitions, storage, and network I/O so each responsibility can be tested or replaced without rewriting the rest of the client.
 
-## Main Parts
+## Layers
 
-- **UI layer**  
-  Jetpack Compose screen with brand switching, filter controls, collection toggles, summary cards, and a log list.
+### Domain
 
-- **ViewModel**  
-  Holds the current collection state, query, active brand, selected severity, and persisted entries. It also owns the background collection loop.
+`SignalLogEntry`, `LogLevel`, `LogSource`, brand definitions, filters, and the simulated signal generator contain no Android UI dependencies. Filters and serialization behavior are covered by JVM tests.
 
-- **Mock signal generator**  
-  Produces deterministic brand-specific signals that resemble infotainment or vehicle subsystem data.
+### Data
 
-- **File store**  
-  Persists entries in a compact local text file and exports the visible subset through a `FileProvider`.
+`DefaultLogRepository` presents one interface to the ViewModel.
 
-- **Pure logic helpers**  
-  Encoding, decoding, and filtering are isolated as plain Kotlin logic so they remain easy to test.
+- `JsonLogFileStore` persists at most 500 entries, exports versioned JSON, and migrates the original TSV cache on first load.
+- `HttpLogRemoteDataSource` sends a bearer-authenticated REST request with OkHttp, rejects invalid endpoints/tokens, bounds payload and entry counts, parses typed JSON, validates required fields, and maps entries to the remote source.
+- `mergeLogs` deduplicates by ID, orders entries by timestamp, and enforces the cache bound.
 
-## Data Flow
+Storage and HTTP calls run on `Dispatchers.IO`.
+
+### Presentation
+
+`LogConsoleViewModel` owns an immutable `LogUiState` exposed as `StateFlow`. It coordinates cache loading, background collection, API sync, filtering, clear/export actions, loading flags, and user-readable failures. Compose screens observe lifecycle-aware state rather than owning business data.
+
+The navigation graph has three routes:
+
+- **Live**: brand selection, simulated collection, API sync, and recent entries.
+- **Saved**: query/severity filters, JSON export, and cache clearing.
+- **Settings**: the build-configured endpoint and an in-memory bearer token.
+
+## State and data flow
 
 ```text
-brand selection / collection toggle
-    ->
-ViewModel
-    ->
-mock signal generator
-    ->
-local file persistence
-    ->
-filtered Compose log viewer
-    ->
-export/share action
+user action
+    -> ViewModel intent
+    -> repository operation on coroutine
+    -> validated domain entries
+    -> bounded cache update
+    -> StateFlow update
+    -> Compose recomposition
 ```
 
-## Why This Structure
+The background collector is a cancellable `viewModelScope` job. Starting it twice is ignored; pausing or clearing cancels the active job. Remote sync also prevents overlapping requests.
 
-- Keeps the collection loop easy to understand.
-- Avoids heavy persistence layers for a small logging tool.
-- Makes the testable logic independent from the Android framework.
-- Leaves room to replace mock data with a real transport layer later.
+## Error handling
+
+- Empty or oversized tokens are rejected before the request.
+- Non-2xx responses produce bounded status messages without echoing response bodies or secrets.
+- JSON syntax, schema versions, response size, entry count, and required fields are validated.
+- Cache and export errors return to the UI through state rather than crashing the screen.
+- The session token is not persisted, logged, or included in exported JSON.
+
+## Trade-offs
+
+The file cache avoids Room schema tooling for a small append/read workload and makes migration/export behavior easy to inspect. A larger product would likely use Room, encrypted token storage, pagination, retry/backoff policy, and dependency injection. Those boundaries are documented instead of implied as completed work.
