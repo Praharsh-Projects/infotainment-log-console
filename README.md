@@ -49,7 +49,7 @@ See [docs/architecture.md](docs/architecture.md) for responsibilities, state tra
 
 Prerequisites:
 
-- Android Studio or Android SDK 35
+- Android Studio with Android SDK 36
 - JDK 17
 - an Android emulator or device with API 26 or later
 
