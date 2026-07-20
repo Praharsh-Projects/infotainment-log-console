@@ -63,7 +63,7 @@ jobs:
       - name: Run Android emulator test
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: 35
           arch: x86_64
           profile: Nexus 6
           disable-animations: true

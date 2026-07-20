@@ -7,7 +7,7 @@ Every push to `main` and every pull request runs:
 1. JVM unit tests.
 2. Android Lint.
 3. Debug APK assembly.
-4. A Compose navigation regression on an API 34 emulator.
+4. A Compose navigation regression on an API 35 emulator.
 5. Upload of unit/emulator reports and the debug APK as 14-day GitHub Actions artifacts.
 
 The APK is intended for internal testing only. It uses Android's debug signing identity and is not a store artifact.

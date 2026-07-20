@@ -82,7 +82,7 @@ Local collection and cache/export flows work without a backend. REST sync requir
 ## Verification scope
 
 - 16 JVM unit tests cover filtering, typed JSON parsing, schema rejection, legacy migration, bounded caching, export, authenticated HTTP requests, response failures, brand isolation, token validation, and merge behavior.
-- 1 Compose instrumentation test checks navigation between Live, Settings, and Saved screens on an Android emulator.
+- 1 Compose instrumentation test checks navigation between Live, Settings, and Saved screens on an API 35 Android emulator.
 - Android Lint and `assembleDebug` run locally and in CI.
 - CI uploads test reports and the debug APK only after the quality job succeeds.
 

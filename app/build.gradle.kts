@@ -14,12 +14,12 @@ val releaseApiBaseUrl = providers.gradleProperty("releaseApiBaseUrl")
 
 android {
     namespace = "com.praharsh.infotainmentlogconsole"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.praharsh.infotainmentlogconsole"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 2
         versionName = "1.1.0"
 
